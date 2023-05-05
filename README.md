@@ -18,7 +18,7 @@ The module Protocol implements a general cryptographic protocol that can cypher 
 to define other protocols.
 
 Keys module is contains the SIDH key exchange and Protocol has definitions to handle SIDH easily as seen in
-'''Example.hs'''.
+`Example.hs`.
 
 Field and EC modules are independent of the others and implement Finite Fields and Elliptic Curves, respectively.
 It is possible to use the Field module to implement elliptic curves over
