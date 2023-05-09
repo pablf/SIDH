@@ -7,7 +7,7 @@ as well as Elliptic Curves and Finite Fields.
 
 ## Usage
 
-The library is made of modules:
+The library is made of the modules:
  - EC
  - Field
  - Keys
