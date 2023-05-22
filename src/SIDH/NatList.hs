@@ -24,12 +24,12 @@ data NatList = Void | ConsList Nat NatList
 -- | Use a proxy to extract value.
 class KnownList l where
   val :: Proxy l -> [Natural]
-  
+
 instance KnownList Void where
   val Proxy = []
-  
+
 instance (KnownNat n, KnownList ns) => KnownList (ConsList n ns) where
-  val Proxy = toNat (fromIntegral (natVal (Proxy :: Proxy n))) : val (Proxy :: Proxy ns)
+  val Proxy = toNat( fromIntegral (natVal (Proxy :: Proxy n))) : val (Proxy :: Proxy ns)
 
 
 -- | from Int to Nat. If n < 0 it returns 0.

@@ -1,8 +1,14 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module ECTest where
 
 import SIDH.EC
 import SIDH.Field
 import Test.QuickCheck
+import GHC.TypeLits
+import Arbitraries
 
 main :: IO ()
 main = do
@@ -10,5 +16,7 @@ main = do
   return()
   
   
-plusDoubleTest :: Field a => EC a -> Point a -> Point a-> Bool
-plusDoubleTest ec p q = if pertains ec p && pertains ec q then double ec (plus ec p q) == plus ec (double ec p) (double ec q) else True 
+plusDoubleTest :: EC GF25 -> Point GF25 -> Point GF25 -> Bool
+plusDoubleTest ec p q = if pertains ec p && pertains ec q then double ec (plus ec p q) == plus ec (double ec p) (double ec q) else True
+
+

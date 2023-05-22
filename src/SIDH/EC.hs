@@ -21,7 +21,7 @@ import SIDH.Field
 
 -- | EC A B
 data EC a = EC a a
-  deriving Show
+  deriving (Eq, Show)
 
 -- | Point x y
 data Point a = Point a a | O

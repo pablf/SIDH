@@ -1,13 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 
-module Example where
-
 import SIDH.EC
 import SIDH.Field
 import SIDH.Keys
 import SIDH.Protocol
-
-type 
 
 -- | Elliptic Curve
 a1 = Fn 2 :: F5

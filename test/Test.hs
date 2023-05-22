@@ -1,8 +1,8 @@
-module Test where
+module Main where
 
 import FieldTest
 import ECTest
-import KeyTest
+import KeysTest
 
 main :: IO ()
 main = do

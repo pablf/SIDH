@@ -22,12 +22,14 @@ import SIDH.Field (Field)
 --   at all times.
 
 data SIDHKey a = SIDHKey (SIDHPublicKey a) (SIDHPrivateKey a)
-  
+  deriving (Eq, Show)
 
 
 data SIDHPublicKey a = SIDHPublicKey (EC a) (Point a) (Point a)
+  deriving (Eq, Show)
 
 data SIDHPrivateKey a = SIDHPrivateKey Int Int
+  deriving (Eq, Show)
 
 
 -- | To operate this protocol you need a Key.

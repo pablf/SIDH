@@ -113,7 +113,7 @@ data Pol (n :: Nat) = Pol [Fn n]
 
 -- | Num, define ring operations for polynomials.
 instance KnownNat n => Num (Pol n) where
-  Pol p + Pol q   = Pol (map (\ (x,y) -> x + y) (customZip p q zero))
+  Pol p + Pol q   = simplify $ Pol (map (\ (x,y) -> x + y) (customZip p q zero))
   
   Pol [] * Pol q = Pol []
   Pol p * Pol [] = Pol []
@@ -131,10 +131,21 @@ instance KnownNat n => Num (Pol n) where
 instance KnownNat n => Module (Pol n) where
   zero = Pol []
   times k (Pol p) = Pol (map (\ x -> times k x) p)
+
+timesF :: KnownNat n => Fn n -> Pol n -> Pol n
+timesF (Fn k) (Pol p) = Pol (map (\ x -> times k x) p)
   
   
   
 -- | Auxiliary methods for Pol type:
+-- | Simplify polynomial
+simplify :: KnownNat n => Pol n -> Pol n
+simplify (Pol p) = let (Pol q) = simplifyAux (Pol (reverse p)) in Pol (reverse q)
+
+simplifyAux :: KnownNat n => Pol n -> Pol n
+simplifyAux (Pol [])     = Pol []
+simplifyAux (Pol (x:xs)) = if zero == x then simplifyAux (Pol xs) else Pol (x:xs)
+
 -- | Multiply polynomial p times X, repeat this k times.
 timesX :: KnownNat n => Int -> Pol n -> Pol n
 timesX 0 p = p
@@ -150,17 +161,36 @@ customZip (x:xs) (y:ys) elem = (x, y) : customZip xs ys elem
 -- | Get the coefficients mod n of a polynomial in a list
 extract :: KnownNat n => Pol n -> [Nat]
 extract (Pol q) = map (\ x -> toNat (reduce x)) q
-  
+
 -- | Remainder of polynomial division: remainder p q is the remainder of p divided by q.
 remainder :: KnownNat n => Pol n -> Pol n -> Pol n
-remainder p q = let d = deg p - deg q in 
-  if d < 0 then p else case inverseLast p of
-                         Just inv -> remainder (p - (q * (timesX d (Pol [inv ])))) q
-                         Nothing  -> zero
+remainder (Pol p) (Pol q) = let d = deg (Pol p) - deg (Pol q) in 
+  if d < 0 then (Pol p) else case inverseLast (Pol q) of
+                         Just inv -> remainder ((Pol p) - (timesF (last p) (Pol q) * (timesX d (Pol [inv])))) (Pol q)
+                         Nothing  -> remainder (Pol p) (Pol (init q))
+  
+-- | Division: division p q is (quotient, remainder) of p divided by q.
+division :: KnownNat n => Pol n -> Pol n -> (Pol n, Pol n)
+division (Pol p) (Pol q) = let d = deg (Pol p) - deg (Pol q) in 
+  if d < 0 then (zero, Pol p) else case inverseLast (Pol q) of
+                         Just inv -> let (a, b) = division ((Pol p) - (timesF (last p) (Pol q) * (timesX d (Pol [inv])))) (Pol q)
+                           in (a + timesF (last p) (timesX d (Pol [inv])), b)
+                         Nothing  -> division (Pol p) (Pol (init q))
+
+-- | Extended Euclidean Algorithm
+data EEA a = EEA a a a
+
+startEea :: KnownNat n => Pol n -> Pol n -> EEA (Pol n)
+startEea p q = eea (EEA p (Pol [unit]) zero) (EEA q zero (Pol [unit]))
+
+eea :: KnownNat n => EEA (Pol n) -> EEA (Pol n) -> EEA (Pol n)
+eea (EEA r0 s0 t0) (EEA r1 s1 t1) = let (q1, r2) = division r0 r1 in
+  if r2 == zero then (EEA r1 s1 t1) else eea (EEA r1 s1 t1) (EEA r2 (s0 - q1*s1) (t0 - q1*t1))
+
                       
 -- | Degree of polynomial.
 deg :: Pol n -> Int
-deg (Pol p) = length p
+deg (Pol p) = length p - 1
 
 -- | Inverse in F_n of higher-degree coefficient.
 inverseLast :: KnownNat n => Pol n -> Maybe (Fn n)
@@ -174,8 +204,9 @@ toPol xs m = Pol (map fromIntegral xs)
 
 -- Obtain all the polynomials with coefficients in F_n with degree less or equal than Int.
 getAllPolynomials :: KnownNat n => Int -> [Pol n] -> [Pol n]
-getAllPolynomials 0 pols = pols
-getAllPolynomials degree pols = getAllPolynomials (degree - 1) (getPolynomialsNextDegree pols) 
+getAllPolynomials degree pols | degree >  0 = getAllPolynomials (degree - 1) (getPolynomialsNextDegree pols)
+                              | degree == 0 = pols
+                              | degree < 0 = []
 
 -- Obtain the polynomials of degree d + 1 using the polynomials previousDegree of degree d.
 getPolynomialsNextDegree :: KnownNat n => [Pol n]-> [Pol n]
@@ -220,8 +251,11 @@ instance (KnownList p, KnownNat n) => Reducible (GF (p :: NatList) (n :: Nat)) w
 -- | Field
 instance (KnownList p, KnownNat n) => Field (GF (p :: NatList) (n :: Nat)) where
   unit = GF (Pol [unit])
-  inverse (GF pol) =  Just (GF pol)
-  
+  inverse (GF pol) | (GF pol) == (zero :: (GF p n)) = Nothing
+                   | otherwise = let (EEA (Pol q) s t) = startEea (toPol (val (Proxy :: Proxy p)) (zero :: Fn n)) pol
+                       in do
+                            y <- inverse (head q)
+                            return (GF (y `timesF` t))
 
 
 -- | Aliases for low-characteristic fields.
